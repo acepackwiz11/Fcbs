@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Surreal Dreamscape</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: black;
+    }
+
+    canvas {
+      display: block;
+    }
+
+    .overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-family: 'Arial', sans-serif;
+      text-align: center;
+      pointer-events: none;
+      z-index: 10;
+      mix-blend-mode: difference;
+    }
+
+    .overlay h1 {
+      font-size: 48px;
+      margin: 0;
+      animation: pulse 2s infinite alternate;
+      text-shadow: 0 0 20px rgba(255, 0, 255, 0.8);
+    }
+
+    .overlay p {
+      font-size: 24px;
+      margin: 10px 0 0;
+      opacity: 0.8;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      100% { transform: scale(1.1); }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  <div class="overlay">
+    <h1>Enter the Surreal</h1>
+    <p>Move your mouse to distort reality</p>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    let width = canvas.width = window.innerWidth;
+    let height = canvas.height = window.innerHeight;
+
+    window.addEventListener('resize', () => {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    });
+
+    class Particle {
+      constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.vx = Math.random() * 2 - 1;
+        this.vy = Math.random() * 2 - 1;
+        this.radius = Math.random() * 3 + 1;
+        this.color = `hsl(${Math.random() * 360}, 100%, 50%)`;
+      }
+
+      update(mouseX, mouseY) {
+        // Gravity towards mouse with repulsion at close range
+        const dx = mouseX - this.x;
+        const dy = mouseY - this.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const force = (dist < 100) ? - (100 - dist) / 100 : (dist > 200) ? 0 : (dist - 100) / 100;
+
+        this.vx += (dx / dist) * force * 0.05;
+        this.vy += (dy / dist) * force * 0.05;
+
+        // Dampen velocity
+        this.vx *= 0.98;
+        this.vy *= 0.98;
+
+        this.x += this.vx;
+        this.y += this.vy;
+
+        // Wrap around edges with surreal twist
+        if (this.x < 0) this.x = width;
+        if (this.x > width) this.x = 0;
+        if (this.y < 0) this.y = height;
+        if (this.y > height) this.y = 0;
+      }
+
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+      }
+    }
+
+    const particles = [];
+    for (let i = 0; i < 300; i++) {
+      particles.push(new Particle(Math.random() * width, Math.random() * height));
+    }
+
+    let mouseX = width / 2;
+    let mouseY = height / 2;
+
+    document.addEventListener('mousemove', (e) => {
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+    });
+
+    function connectParticles() {
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 100) {
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.strokeStyle = `rgba(255, 255, 255, ${1 - dist / 100})`;
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+          }
+        }
+      }
+    }
+
+    function animate() {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+      ctx.fillRect(0, 0, width, height);
+
+      particles.forEach(p => {
+        p.update(mouseX, mouseY);
+        p.draw();
+      });
+
+      connectParticles();
+
+      // Surreal color shift
+      particles.forEach(p => {
+        const hue = (parseInt(p.color.match(/hsl\((\d+)/)[1]) + 1) % 360;
+        p.color = `hsl(${hue}, 100%, 50%)`;
+      });
+
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+  </script>
+</body>
+</html>
